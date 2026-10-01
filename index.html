@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricii - Smart Multi-Store Price Tracker & Universal Cart</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for 6-Month Price History Graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            pricii: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              accent: '#3b82f6',
+              dark: '#0f172a',
+              card: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #4ade80 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .pulse-glow {
+      box-shadow: 0 0 25px -5px rgba(34, 197, 94, 0.3);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+  <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-4">
+        
+        <!-- Logo -->
+        <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('explore')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-blue-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-emerald-500/20">
+            <i class="fa-solid fa-tags text-slate-950"></i>
+          </div>
+          <div>
+            <span class="text-2xl font-extrabold tracking-tight gradient-text">Pricii</span>
+            <span class="hidden sm:inline-block text-xs text-slate-400 block -mt-1 font-medium">Universal Retail Engine</span>
+          </div>
+        </div>
+
+        <!-- Search Bar with Universal Multi-Store Scope -->
+        <div class="flex-1 max-w-md hidden md:block">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input 
+              type="text" 
+              id="searchInput" 
+              placeholder="Search chairs, desks, shoes, electronics, cookware across stores..." 
+              oninput="filterProducts()"
+              class="w-full bg-slate-900 border border-slate-800 rounded-full pl-10 pr-10 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-100 placeholder-slate-500 transition-all"
+            >
+            <button onclick="clearSearch()" id="clearSearchBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              <i class="fa-solid fa-circle-xmark text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation Actions -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Pitch Deck Toggle Button -->
+          <button 
+            onclick="switchTab('pitch')" 
+            id="nav-pitch"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/30 transition-all"
+          >
+            <i class="fa-solid fa-tv text-amber-400"></i>
+            <span>Shark Tank Pitch</span>
+          </button>
+
+          <!-- Auto-Detect Deals Button -->
+          <button 
+            onclick="switchTab('autodetect')" 
+            id="nav-autodetect"
+            class="relative px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-slate-800 bg-slate-900 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 transition-all"
+          >
+            <i class="fa-solid fa-radar text-emerald-400 mr-1.5"></i>
+            <span class="hidden sm:inline">Auto-Detect Deals</span>
+            <span class="sm:hidden">Deals</span>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>
+          </button>
+
+          <!-- Universal Cart Button -->
+          <button 
+            onclick="switchTab('cart')" 
+            id="nav-cart"
+            class="relative px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all flex items-center gap-2 shadow-md shadow-emerald-500/20"
+          >
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span class="hidden sm:inline">Universal Cart</span>
+            <span id="cartCountBadge" class="bg-slate-950 text-emerald-400 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none"></div>
+
+    <!-- TAB 1: PRODUCT EXPLORER & PRICE TRACKER -->
+    <section id="view-explore" class="space-y-6">
+      
+      <!-- Hero Banner / Value Proposition -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 p-6 sm:p-8">
+        <div class="relative z-10 max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-3">
+            <i class="fa-solid fa-store"></i> Truly Universal Multi-Merchant Market
+          </div>
+          <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight mb-2">
+            Track prices for <span class="gradient-text">furniture, clothing, appliances & tech</span> everywhere.
+          </h1>
+          <p class="text-slate-400 text-sm sm:text-base mb-6">
+            Pricii compares Amazon, Target, Walmart, Home Depot, Wayfair, IKEA, Best Buy, and Nike. Discover historical 6-month price trends and checkout from multiple retailers in one single transaction.
+          </p>
+          
+          <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 backdrop-blur-md mb-6 max-w-xl">
+            <label class="text-xs font-bold text-slate-300 block mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-plus-circle text-emerald-400"></i>
+              Track Any Product URL or Item Name Exponentially
+            </label>
+            <div class="flex gap-2">
+              <input 
+                type="text" 
+                id="customProductInput" 
+                placeholder="Paste store link or item (e.g. Sony TV, Nike Air Max, IKEA Desk)..." 
+                class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                onkeypress="if(event.key === 'Enter') trackCustomProduct()"
+              >
+              <button 
+                onclick="trackCustomProduct()" 
+                class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition-all shrink-0 flex items-center gap-1.5 shadow-md shadow-emerald-500/20"
+              >
+                <i class="fa-solid fa-bolt"></i>
+                Track & Compare
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <button onclick="triggerQuickScan()" class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm hover:bg-emerald-400 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              Scan Universal Prices
+            </button>
+            <button onclick="switchTab('pitch')" class="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-sm hover:bg-slate-700 transition-all">
+              Watch Pitch Deck Demo
+            </button>
+          </div>
+        </div>
+        <!-- Decorative Background Glow -->
+        <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      </div>
+
+      <div class="flex flex-col gap-3 border-b border-slate-800 pb-4">
+        
+        <!-- Expanded Universal Category Filter Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto w-full pb-1 scrollbar-none" id="categoryFilters">
+          <button onclick="setCategory('All')" class="cat-pill active px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500 text-slate-950 transition-all shrink-0">
+            All Items
+          </button>
+          <button onclick="setCategory('Furniture')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all shrink-0">
+            <i class="fa-solid fa-chair text-amber-400 mr-1"></i> Furniture & Office
+          </button>
+          <button onclick="setCategory('Kitchen')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all shrink-0">
+            <i class="fa-solid fa-utensils text-blue-400 mr-1"></i> Kitchen & Home
+          </button>
+          <button onclick="setCategory('Apparel')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all shrink-0">
+            <i class="fa-solid fa-shirt text-purple-400 mr-1"></i> Apparel & Shoes
+          </button>
+          <button onclick="setCategory('Fitness')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all shrink-0">
+            <i class="fa-solid fa-dumbbell text-rose-400 mr-1"></i> Fitness & Health
+          </button>
+          <button onclick="setCategory('Electronics')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all shrink-0">
+            Electronics
+          </button>
+          <button onclick="setCategory('Audio')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all shrink-0">
+            <i class="fa-solid fa-headphones text-cyan-400 mr-1"></i> Audio
+          </button>
+          <button onclick="setCategory('Gaming')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all shrink-0">
+            Gaming
+          </button>
+          <button onclick="setCategory('Outdoor')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all shrink-0">
+            <i class="fa-solid fa-tree text-emerald-400 mr-1"></i> Outdoor & Garden
+          </button>
+          <button onclick="setCategory('Deals')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-amber-400 hover:border-slate-700 transition-all shrink-0">
+            <i class="fa-solid fa-fire text-amber-400 mr-1"></i> 6-Mo Lowest Prices
+          </button>
+        </div>
+
+        <!-- Store-Specific Filter Pills -->
+        <div class="flex items-center justify-between gap-4 pt-1">
+          <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none w-full" id="storeFilters">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1">Filter Store:</span>
+            <button onclick="setStoreFilter('All')" class="store-pill active px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 transition-all shrink-0">
+              All Merchants
+            </button>
+            <button onclick="setStoreFilter('Amazon')" class="store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0">Amazon</button>
+            <button onclick="setStoreFilter('Target')" class="store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0">Target</button>
+            <button onclick="setStoreFilter('Walmart')" class="store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0">Walmart</button>
+            <button onclick="setStoreFilter('Wayfair')" class="store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0">Wayfair</button>
+            <button onclick="setStoreFilter('Home Depot')" class="store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0">Home Depot</button>
+            <button onclick="setStoreFilter('IKEA')" class="store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0">IKEA</button>
+            <button onclick="setStoreFilter('Best Buy')" class="store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0">Best Buy</button>
+            <button onclick="setStoreFilter('Nike')" class="store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0">Nike</button>
+          </div>
+
+          <!-- Summary Stats -->
+          <div class="flex items-center gap-3 text-xs text-slate-400 shrink-0 hidden md:flex">
+            <div>Catalog: <span id="totalProductsCountText" class="font-bold text-slate-200">100+ Items</span></div>
+            <div class="h-3 w-px bg-slate-800"></div>
+            <div>Alerts: <span id="alertCountText" class="font-bold text-emerald-400">3 Items</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <!-- Products populated dynamically via JS -->
+      </div>
+
+      <!-- Load More / Pagination Bar -->
+      <div id="loadMoreContainer" class="flex flex-col items-center justify-center py-6 border-t border-slate-800/80 gap-2">
+        <span id="displayCountLabel" class="text-xs text-slate-400 font-medium">Showing 16 of 100+ items</span>
+        <button onclick="loadMoreProducts()" id="loadMoreBtn" class="px-6 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-200 font-bold text-xs transition-all flex items-center gap-2">
+          <i class="fa-solid fa-angles-down text-emerald-400"></i>
+          Load More Products
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 2: AUTO DETECTION & RECOMMENDATIONS -->
+    <section id="view-autodetect" class="hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+        <div>
+          <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm mb-1">
+            <i class="fa-solid fa-brain"></i> Universal Retail Detection Engine Active
+          </div>
+          <h2 class="text-2xl font-bold text-white">Cross-Category Lowest Price Engine</h2>
+          <p class="text-slate-400 text-sm mt-1">
+            Pricii monitors user intent across Furniture, Kitchen, Apparel, Fitness & Tech to alert you when items touch historical bargains.
+          </p>
+        </div>
+        <button onclick="askGeminiRecommendation()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm transition-all flex items-center gap-2 shrink-0 shadow-lg shadow-blue-500/20">
+          <i class="fa-solid fa-robot"></i>
+          Ask Pricii AI Deal Finder
+        </button>
+      </div>
+
+      <!-- AI Insights Output Box -->
+      <div id="aiInsightsCard" class="hidden bg-slate-900/90 border border-blue-500/30 rounded-2xl p-5 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+            <i class="fa-solid fa-sparkles"></i> Gemini AI Smart Recommendation
+          </span>
+          <button onclick="closeAiInsights()" class="text-slate-400 hover:text-white">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="aiInsightsContent" class="text-slate-200 text-sm leading-relaxed">
+          Generating smart deal suggestions based on universal retail trends...
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Auto Detected Recommendations Column -->
+        <div class="lg:col-span-2 space-y-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-amber-400"></i> Auto-Detected Retail Deals
+          </h3>
+          <div id="autoDetectedList" class="space-y-4">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Price Trend Insights Sidebar -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-emerald-400"></i> Market Category Trends
+          </h3>
+          
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span class="text-xs font-semibold text-slate-400">Retail Category Trends</span>
+              <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">-18% Avg Price Drop</span>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-300">Office Chairs & Desks</span>
+                <span class="font-bold text-emerald-400">Cheapest Month</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full w-11/12"></div>
+              </div>
+
+              <div class="flex items-center justify-between pt-2">
+                <span class="text-slate-300">Kitchen Appliances</span>
+                <span class="font-bold text-emerald-400">Near 6-Mo Low</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full w-4/5"></div>
+              </div>
+
+              <div class="flex items-center justify-between pt-2">
+                <span class="text-slate-300">Apparel & Footwear</span>
+                <span class="font-bold text-amber-400">Price Stable</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-amber-500 h-full w-3/5"></div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800">
+              <p class="text-xs text-slate-400 leading-normal">
+                <i class="fa-solid fa-circle-info text-slate-500 mr-1"></i>
+                Pricii aggregates prices across Amazon, Home Depot, Wayfair, Target, IKEA, Nike, Walmart, and Best Buy.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: UNIVERSAL MULTI-STORE CART -->
+    <section id="view-cart" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            <i class="fa-solid fa-cart-shopping text-emerald-400"></i> Universal Multi-Merchant Cart
+          </h2>
+          <p class="text-slate-400 text-sm">Checkout chairs, shoes, appliances & electronics from different stores in a single order.</p>
+        </div>
+        <button onclick="clearCart()" id="clearCartBtn" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 font-semibold self-start sm:self-auto">
+          <i class="fa-solid fa-trash-can"></i> Clear All Cart Items
+        </button>
+      </div>
+
+      <div id="cartEmptyState" class="hidden text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
+        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 text-2xl mx-auto mb-4">
+          <i class="fa-solid fa-cart-arrow-down"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-1">Your Universal Cart is empty</h3>
+        <p class="text-slate-400 text-sm max-w-sm mx-auto mb-6">Browse items across Home Depot, Wayfair, Target, Amazon, IKEA, and Nike to save time and money.</p>
+        <button onclick="switchTab('explore')" class="px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm hover:bg-emerald-400 transition-all">
+          Start Exploring Deals
+        </button>
+      </div>
+
+      <div id="cartContent" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Cart Items List by Store -->
+        <div class="lg:col-span-2 space-y-4" id="cartStoreGroups">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Multi-Store Universal Checkout Summary -->
+        <div class="space-y-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sticky top-24 space-y-5">
+            <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
+              <span>Order Summary</span>
+              <span class="text-xs font-normal text-slate-400" id="cartStoreCount">0 Stores</span>
+            </h3>
+
+            <div class="space-y-2.5 text-sm">
+              <div class="flex justify-between text-slate-400">
+                <span>Subtotal</span>
+                <span id="cartSubtotal" class="font-medium text-slate-200">$0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>Multi-Store Shipping</span>
+                <span class="text-emerald-400 font-semibold">FREE</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>Total Pricii Deal Savings</span>
+                <span id="cartTotalSavings" class="text-emerald-400 font-semibold">-$0.00</span>
+              </div>
+              <div class="border-t border-slate-800 pt-3 flex justify-between text-base font-bold text-white">
+                <span>Total Due</span>
+                <span id="cartTotal" class="text-xl gradient-text">$0.00</span>
+              </div>
+            </div>
+
+            <!-- Single Click Unified Checkout -->
+            <button onclick="executeMultiStoreCheckout()" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+              <i class="fa-solid fa-lock"></i>
+              <span>1-Click Multi-Merchant Checkout</span>
+            </button>
+
+            <p class="text-xs text-center text-slate-500">
+              <i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i>
+              Pricii routes orders directly to partner merchant fulfillment APIs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SHARK TANK PITCH DECK MODE -->
+    <section id="view-pitch" class="hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-6 relative overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-2">
+              <i class="fa-solid fa-award"></i> Shark Tank Proposal Deck
+            </div>
+            <h2 class="text-2xl font-black text-white tracking-tight">Pricii Pitch Showcase</h2>
+            <p class="text-slate-400 text-sm">Created & Presented by Jaxon Bryant Denney (JBD), Oliver Ambrose, and Dylan Gore.</p>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button onclick="prevSlide()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-all disabled:opacity-50" id="prevSlideBtn">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <span id="slideIndicator" class="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/20">
+              Slide 1 / 5
+            </span>
+            <button onclick="nextSlide()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-all" id="nextSlideBtn">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pitch Deck Slide Display Container -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-10 relative min-h-[420px] flex flex-col justify-between">
+        
+        <!-- Slide Content Dynamic Area -->
+        <div id="slideContent">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Slide Footer Controls & Pitch Audio Simulator -->
+        <div class="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <button onclick="speakCurrentSlideScript()" id="pitchAudioBtn" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-md shadow-amber-500/20">
+              <i class="fa-solid fa-volume-high"></i>
+              Read Presenter Script
+            </button>
+            <button onclick="testAppFromPitch()" class="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs hover:bg-emerald-500/20 transition-all flex items-center gap-2">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i>
+              Try Live App Feature
+            </button>
+          </div>
+
+          <div class="text-xs text-slate-500 flex items-center gap-4">
+            <span>Target Market: <strong class="text-slate-300">All Online Retail Shoppers</strong></span>
+            <span>Platform: <strong class="text-slate-300">iOS & Web</strong></span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODAL: PRICE HISTORY & ITEM DETAILS -->
+  <div id="priceModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative shadow-2xl">
+      
+      <!-- Close Button -->
+      <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Item Title & Category -->
+      <div class="flex items-start gap-4 mb-6">
+        <img id="modalImage" src="" alt="" class="w-20 h-20 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0">
+        <div>
+          <span id="modalCategory" class="text-xs font-semibold text-emerald-400 uppercase tracking-wider"></span>
+          <h3 id="modalTitle" class="text-xl font-bold text-white leading-snug"></h3>
+          <div class="flex items-center gap-3 mt-1 text-sm">
+            <span id="modalCurrentPrice" class="text-lg font-black text-emerald-400"></span>
+            <span id="modalLowestBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6-Month Price Chart Container -->
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2 text-xs font-bold text-slate-300">
+            <i class="fa-solid fa-chart-area text-emerald-400"></i>
+            6-Month Historical Price Trend
+          </div>
+          <div class="text-xs text-slate-400 flex items-center gap-3">
+            <span>High: <strong id="modalHighPrice" class="text-rose-400"></strong></span>
+            <span>Low: <strong id="modalLowPrice" class="text-emerald-400"></strong></span>
+          </div>
+        </div>
+
+        <div class="relative h-56 w-full">
+          <canvas id="priceHistoryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Store Availability Breakdown -->
+      <div class="space-y-3 mb-6">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Compare Store Prices Right Now</h4>
+        <div id="modalStorePrices" class="space-y-2">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- AI Price Prediction Box -->
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 flex items-start gap-3 mb-6">
+        <i class="fa-solid fa-lightbulb text-amber-400 text-lg mt-0.5"></i>
+        <div class="text-xs text-slate-300 leading-relaxed">
+          <strong class="text-white block mb-0.5">Pricii Recommendation Engine:</strong>
+          <span id="modalAiAdvice">Analyzing price cycles...</span>
+        </div>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+        <button onclick="toggleAlertForCurrentItem()" id="modalAlertBtn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs transition-all flex items-center gap-2">
+          <i class="fa-solid fa-bell"></i>
+          <span>Track Price Drop</span>
+        </button>
+        <button onclick="addModalItemToCart()" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition-all flex items-center gap-2 shadow-md shadow-emerald-500/20">
+          <i class="fa-solid fa-cart-plus"></i>
+          <span>Add Lowest Price to Universal Cart</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    
+    // Core Seed Templates across 9 categories and 8 stores
+    const baseCatalogSeeds = [
+      {
+        category: "Furniture",
+        stores: ["Wayfair", "Amazon", "Target", "IKEA", "Home Depot"],
+        items: [
+          { name: "Herman Miller Aeron Ergonomic Mesh Executive Office Chair", img: "https://images.unsplash.com/photo-1580481072645-022f9a6d1270?w=500&auto=format&fit=crop&q=60", basePrice: 895, maxPrice: 1295 },
+          { name: "FlexiSpot E7 Pro Electric Height Adjustable Standing Desk", img: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=500&auto=format&fit=crop&q=60", basePrice: 349, maxPrice: 499 },
+          { name: "IKEA Strandmon Armchair & Accent Wing Chair", img: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=500&auto=format&fit=crop&q=60", basePrice: 249, maxPrice: 299 },
+          { name: "West Elm Modern Leather Chesterfield Sofa 3-Seater", img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&auto=format&fit=crop&q=60", basePrice: 1299, maxPrice: 1799 },
+          { name: "Pottery Barn Rustic Solid Wood Dining Table Set", img: "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?w=500&auto=format&fit=crop&q=60", basePrice: 799, maxPrice: 1099 },
+          { name: "Ashley Furniture Minimalist Bookshelf Unit 5-Tier", img: "https://images.unsplash.com/photo-1594620302200-9a762244a156?w=500&auto=format&fit=crop&q=60", basePrice: 189, maxPrice: 279 },
+          { name: "IKEA Kallax Cube Storage Shelf Cabinet", img: "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=500&auto=format&fit=crop&q=60", basePrice: 89, maxPrice: 129 },
+          { name: "Wayfair Basics Velvet Upholstered Platform Bed Frame", img: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=500&auto=format&fit=crop&q=60", basePrice: 229, maxPrice: 359 }
+        ]
+      },
+      {
+        category: "Kitchen",
+        stores: ["Target", "Walmart", "Amazon", "Best Buy", "Home Depot"],
+        items: [
+          { name: "Ninja Foodi 6-in-1 8-Qt DualZone 2-Basket Air Fryer", img: "https://images.unsplash.com/photo-1585515320310-259814833e62?w=500&auto=format&fit=crop&q=60", basePrice: 129.99, maxPrice: 199.99 },
+          { name: "Dyson V15 Detect Cordless Vacuum Cleaner", img: "https://images.unsplash.com/photo-1558317374-067fb5f30001?w=500&auto=format&fit=crop&q=60", basePrice: 599, maxPrice: 749 },
+          { name: "KitchenAid Artisan Series 5-Quart Stand Mixer", img: "https://images.unsplash.com/photo-1594385208974-2e75f8d7bb48?w=500&auto=format&fit=crop&q=60", basePrice: 329, maxPrice: 449 },
+          { name: "Instant Pot Duo 7-in-1 Electric Pressure Cooker 6-Qt", img: "https://images.unsplash.com/photo-1544233726-9f1d2b27be8b?w=500&auto=format&fit=crop&q=60", basePrice: 79, maxPrice: 119 },
+          { name: "Nespresso VertuoPlus Coffee & Espresso Machine by De'Longhi", img: "https://images.unsplash.com/photo-1517668808822-9ebd02f2a888?w=500&auto=format&fit=crop&q=60", basePrice: 139, maxPrice: 199 },
+          { name: "Le Creuset Enameled Cast Iron Dutch Oven 5.5-Qt", img: "https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=500&auto=format&fit=crop&q=60", basePrice: 349, maxPrice: 420 },
+          { name: "Cuisinart 14-Cup Custom Food Processor", img: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=500&auto=format&fit=crop&q=60", basePrice: 179, maxPrice: 249 }
+        ]
+      },
+      {
+        category: "Apparel",
+        stores: ["Nike", "Target", "Amazon", "Walmart"],
+        items: [
+          { name: "Nike Air Force 1 '07 Low Classic Sneakers", img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&auto=format&fit=crop&q=60", basePrice: 85, maxPrice: 115 },
+          { name: "Nike Tech Fleece Full-Zip Hoodie Outerwear", img: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=60", basePrice: 110, maxPrice: 145 },
+          { name: "Adidas Ultraboost Light Running Shoes", img: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=500&auto=format&fit=crop&q=60", basePrice: 139, maxPrice: 190 },
+          { name: "Levi's 501 Original Fit Denim Jeans", img: "https://images.unsplash.com/photo-1542272604-780c36856d62?w=500&auto=format&fit=crop&q=60", basePrice: 49.99, maxPrice: 79.50 },
+          { name: "Patagonia Better Sweater 1/4-Zip Fleece Jacket", img: "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=500&auto=format&fit=crop&q=60", basePrice: 109, maxPrice: 139 },
+          { name: "Carhartt Loose Fit Heavyweight Pocket T-Shirt", img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=60", basePrice: 19.99, maxPrice: 29.99 }
+        ]
+      },
+      {
+        category: "Fitness",
+        stores: ["Walmart", "Target", "Amazon", "Best Buy"],
+        items: [
+          { name: "Bowflex SelectTech 552 Adjustable Dumbbells (Pair)", img: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=500&auto=format&fit=crop&q=60", basePrice: 379, maxPrice: 549 },
+          { name: "Peloton Bike Original Indoor Exercise Station", img: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60", basePrice: 1145, maxPrice: 1445 },
+          { name: "Garmin Forerunner 265 GPS Running Smartwatch", img: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500&auto=format&fit=crop&q=60", basePrice: 349, maxPrice: 449 },
+          { name: "TRX ALL-IN-ONE Suspension Trainer System", img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500&auto=format&fit=crop&q=60", basePrice: 129, maxPrice: 179 },
+          { name: "NordicTrack Commercial 1750 Folding Treadmill", img: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=500&auto=format&fit=crop&q=60", basePrice: 1599, maxPrice: 1999 }
+        ]
+      },
+      {
+        category: "Audio",
+        stores: ["Best Buy", "Amazon", "Walmart", "Target"],
+        items: [
+          { name: "Sony WH-1000XM5 Wireless Noise-Canceling Headphones", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60", basePrice: 199, maxPrice: 399 },
+          { name: "Apple AirPods Pro (2nd Generation) MagSafe Case", img: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=500&auto=format&fit=crop&q=60", basePrice: 189, maxPrice: 249 },
+          { name: "Bose QuietComfort Ultra Wireless Noise Cancelling Earbuds", img: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&auto=format&fit=crop&q=60", basePrice: 249, maxPrice: 299 },
+          { name: "JBL Flip 6 Portable Waterproof Bluetooth Speaker", img: "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&auto=format&fit=crop&q=60", basePrice: 89.95, maxPrice: 129.95 }
+        ]
+      },
+      {
+        category: "Electronics",
+        stores: ["Walmart", "Best Buy", "Amazon", "Target", "Home Depot"],
+        items: [
+          { name: "LG C3 55-Inch OLED EVO 4K Smart TV", img: "https://images.unsplash.com/photo-1593784991095-a205069470b6?w=500&auto=format&fit=crop&q=60", basePrice: 849, maxPrice: 1299 },
+          { name: "Apple MacBook Air 13.6-Inch M2 Chip 256GB SSD", img: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=60", basePrice: 899, maxPrice: 1099 },
+          { name: "Samsung Galaxy Tab S9 Ultra 14.6-Inch AMOLED Display", img: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&auto=format&fit=crop&q=60", basePrice: 949, maxPrice: 1199 },
+          { name: "Anker 737 Power Bank 24,000mAh 140W Fast Charger", img: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=500&auto=format&fit=crop&q=60", basePrice: 99, maxPrice: 149 }
+        ]
+      },
+      {
+        category: "Gaming",
+        stores: ["Target", "Amazon", "Best Buy", "Walmart"],
+        items: [
+          { name: "PlayStation 5 Console - Slim Edition", img: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=500&auto=format&fit=crop&q=60", basePrice: 449, maxPrice: 499 },
+          { name: "Nintendo Switch OLED Model with White Joy-Cons", img: "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=500&auto=format&fit=crop&q=60", basePrice: 319, maxPrice: 349 },
+          { name: "ASUS ROG Ally 7-Inch 120Hz Gaming Handheld Console", img: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=500&auto=format&fit=crop&q=60", basePrice: 599, maxPrice: 699 },
+          { name: "Logitech G Pro X Superlight 2 Wireless Gaming Mouse", img: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&auto=format&fit=crop&q=60", basePrice: 139, maxPrice: 159 }
+        ]
+      },
+      {
+        category: "Outdoor",
+        stores: ["Home Depot", "Wayfair", "Amazon", "Target", "Walmart"],
+        items: [
+          { name: "Weber Spirit II E-310 3-Burner Liquid Propane Grill", img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&auto=format&fit=crop&q=60", basePrice: 499, maxPrice: 639 },
+          { name: "EGO Power+ 56V Cordless Lawn Mower with Battery", img: "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=500&auto=format&fit=crop&q=60", basePrice: 399, maxPrice: 549 },
+          { name: "Solo Stove Bonfire 2.0 Smokeless Fire Pit", img: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=500&auto=format&fit=crop&q=60", basePrice: 224, maxPrice: 299 }
+        ]
+      }
+    ];
+
+    function generateExpandedCatalog() {
+      const generated = [];
+      let counter = 1;
+
+      // Repeat templates with variations to populate 100+ unique tracked items
+      baseCatalogSeeds.forEach(seed => {
+        seed.items.forEach(baseItem => {
+          // Primary item
+          const isLowest = (counter % 3 === 0);
+          const currentPrice = isLowest ? baseItem.basePrice : Math.round(baseItem.basePrice * (1 + (counter % 5) * 0.05));
+          
+          const storesList = seed.stores.map((sName, idx) => {
+            const price = (idx === 0) ? currentPrice : Math.round(currentPrice * (1 + (idx * 0.04)));
+            return {
+              name: sName,
+              price: price,
+              stock: true,
+              dealTag: idx === 0 ? (isLowest ? "6-Mo Low" : "Best Deal") : "Standard"
+            };
+          });
+
+          // Generate 6 month trajectory
+          const history = [];
+          for(let i=5; i>=0; i--) {
+            if (i === 0) history.push(currentPrice);
+            else history.push(Math.round(currentPrice + (i * (baseItem.maxPrice - currentPrice)/5)));
+          }
+
+          generated.push({
+            id: `p_exp_${counter}`,
+            title: baseItem.name,
+            category: seed.category,
+            image: baseItem.img,
+            description: `Universal retail product tracked across ${storesList.map(s => s.name).join(', ')}. Guaranteed real-time price monitoring.`,
+            currentPrice: currentPrice,
+            lowestPrice6Mo: baseItem.basePrice,
+            highestPrice6Mo: baseItem.maxPrice,
+            isCheapestNow: isLowest,
+            stores: storesList,
+            priceHistory6Mo: history,
+            autoDetectedReason: isLowest ? 
+              `Lowest recorded price in 6 months ($${(baseItem.maxPrice - currentPrice).toFixed(0)} drop on ${storesList[0].name})!` : 
+              `Price drop detected on ${storesList[0].name} relative to 6-month average.`
+          });
+          counter++;
+        });
+      });
+
+      // Secondary expansion pass with color / model variants to exceed 100 items
+      const variants = ["Pro Edition", "Midnight Black", "Nordic Edition", "2026 Refresh", "Compact Model", "Studio Series"];
+      let subCounter = 1;
+
+      while (generated.length < 108) {
+        const seedGroup = baseCatalogSeeds[subCounter % baseCatalogSeeds.length];
+        const baseItem = seedGroup.items[subCounter % seedGroup.items.length];
+        const variantTag = variants[subCounter % variants.length];
+
+        const isLowest = (subCounter % 2 === 0);
+        const currentPrice = isLowest ? Math.round(baseItem.basePrice * 0.9) : Math.round(baseItem.basePrice * 1.05);
+
+        const storesList = seedGroup.stores.map((sName, idx) => ({
+          name: sName,
+          price: (idx === 0) ? currentPrice : Math.round(currentPrice * (1 + (idx * 0.05))),
+          stock: true,
+          dealTag: idx === 0 ? "Featured Deal" : "Standard"
+        }));
+
+        const history = [
+          baseItem.maxPrice,
+          Math.round(baseItem.maxPrice * 0.95),
+          Math.round(baseItem.maxPrice * 0.90),
+          Math.round(baseItem.maxPrice * 0.85),
+          Math.round(currentPrice * 1.1),
+          currentPrice
+        ];
+
+        generated.push({
+          id: `p_var_${subCounter}`,
+          title: `${baseItem.name} (${variantTag})`,
+          category: seedGroup.category,
+          image: baseItem.img,
+          description: `Expanded product variant tracked across top US retailers including ${storesList.map(s=>s.name).join(', ')}.`,
+          currentPrice: currentPrice,
+          lowestPrice6Mo: Math.min(currentPrice, baseItem.basePrice),
+          highestPrice6Mo: baseItem.maxPrice,
+          isCheapestNow: isLowest,
+          stores: storesList,
+          priceHistory6Mo: history,
+          autoDetectedReason: `Automated detection: ${variantTag} price drop available now.`
+        });
+        subCounter++;
+      }
+
+      return generated;
+    }
+
+    // Initialize products catalog exponentially
+    const productsData = generateExpandedCatalog();
+
+    let cart = [];
+    let trackedAlerts = new Set(["p_exp_1", "p_exp_4", "p_exp_9"]);
+    let currentCategory = "All";
+    let currentStoreFilter = "All";
+    let activeModalItem = null;
+    let chartInstance = null;
+    let currentSlideIndex = 0;
+    let displayLimit = 16;
+
+    window.onload = function() {
+      renderProducts();
+      renderAutoDetectedDeals();
+      updateCartUI();
+      renderSlide(currentSlideIndex);
+      
+      const totalCount = document.getElementById('totalProductsCountText');
+      if (totalCount) totalCount.textContent = `${productsData.length} Items`;
+    };
+
+    function setStoreFilter(storeName) {
+      currentStoreFilter = storeName;
+      const pills = document.querySelectorAll('.store-pill');
+      pills.forEach(p => {
+        if (p.textContent.trim() === storeName || (storeName === 'All' && p.textContent.trim() === 'All Merchants')) {
+          p.className = 'store-pill active px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 transition-all shrink-0';
+        } else {
+          p.className = 'store-pill px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all shrink-0';
+        }
+      });
+      displayLimit = 16;
+      renderProducts();
+    }
+
+    function trackCustomProduct() {
+      const input = document.getElementById('customProductInput');
+      const val = input.value.trim();
+      if (!val) {
+        showToast('Please enter a product URL or item name to track.', 'warning');
+        return;
+      }
+
+      // Extract a nice clean title
+      let cleanTitle = val;
+      if (val.includes('http')) {
+        try {
+          const urlObj = new URL(val);
+          cleanTitle = urlObj.pathname.split('/').filter(Boolean).pop() || val;
+          cleanTitle = cleanTitle.replace(/[-_]/g, ' ');
+          cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+        } catch(e) {
+          cleanTitle = val;
+        }
+      }
+
+      const randomPrice = Math.floor(Math.random() * 200) + 49;
+      const highPrice = Math.round(randomPrice * 1.35);
+
+      const newProduct = {
+        id: `p_custom_${Date.now()}`,
+        title: cleanTitle.length > 50 ? cleanTitle.substring(0, 50) + "..." : cleanTitle,
+        category: "Furniture",
+        image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&auto=format&fit=crop&q=60",
+        description: "User submitted product added to Universal Multi-Store Price Tracker.",
+        currentPrice: randomPrice,
+        lowestPrice6Mo: randomPrice,
+        highestPrice6Mo: highPrice,
+        isCheapestNow: true,
+        stores: [
+          { name: "Wayfair", price: randomPrice, stock: true, dealTag: "User Scan Low" },
+          { name: "Amazon", price: randomPrice + 15, stock: true, dealTag: "Standard" },
+          { name: "Target", price: randomPrice + 25, stock: true, dealTag: "Standard" }
+        ],
+        priceHistory6Mo: [highPrice, highPrice - 10, highPrice - 20, randomPrice + 30, randomPrice + 10, randomPrice],
+        autoDetectedReason: `Custom tracked URL item generated with 6-month historical curve!`
+      };
+
+      productsData.unshift(newProduct);
+      trackedAlerts.add(newProduct.id);
+      input.value = '';
+
+      showToast(`Added "${newProduct.title}" to tracked catalog!`, 'success');
+      renderProducts();
+      openPriceModal(newProduct.id);
+
+      const totalCount = document.getElementById('totalProductsCountText');
+      if (totalCount) totalCount.textContent = `${productsData.length} Items`;
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('productsGrid');
+      const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+      
+      let filtered = productsData.filter(item => {
+        const matchesCategory = (currentCategory === 'All') ||
+                                (currentCategory === 'Deals' && item.isCheapestNow) ||
+                                (item.category === currentCategory);
+
+        const matchesStore = (currentStoreFilter === 'All') ||
+                             item.stores.some(s => s.name.toLowerCase() === currentStoreFilter.toLowerCase());
+
+        const matchesSearch = !searchVal ||
+                              item.title.toLowerCase().includes(searchVal) ||
+                              item.category.toLowerCase().includes(searchVal) ||
+                              item.description.toLowerCase().includes(searchVal) ||
+                              item.stores.some(s => s.name.toLowerCase().includes(searchVal));
+
+        return matchesCategory && matchesStore && matchesSearch;
+      });
+
+      const totalFiltered = filtered.length;
+      const visibleItems = filtered.slice(0, displayLimit);
+
+      // Update Pagination / Load More UI
+      const countLabel = document.getElementById('displayCountLabel');
+      const loadBtn = document.getElementById('loadMoreBtn');
+      if (countLabel) countLabel.textContent = `Showing ${visibleItems.length} of ${totalFiltered} matched items`;
+      if (loadBtn) {
+        if (visibleItems.length >= totalFiltered) {
+          loadBtn.classList.add('hidden');
+        } else {
+          loadBtn.classList.remove('hidden');
+        }
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-12 bg-slate-900/50 border border-slate-800 rounded-2xl">
+            <i class="fa-solid fa-magnifying-glass-minus text-3xl text-slate-500 mb-3"></i>
+            <p class="text-slate-300 font-bold">No products match search criteria.</p>
+            <p class="text-xs text-slate-500 mt-1">Try resetting store filters or searching for "chair", "desk", "air fryer", "shoes", or "dyson".</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = visibleItems.map(item => {
+        const lowestStore = item.stores.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
+        const isAlertActive = trackedAlerts.has(item.id);
+
+        return `
+          <div class="group bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:shadow-emerald-500/5">
+            <div>
+              <!-- Product Image Container -->
+              <div class="relative h-48 overflow-hidden bg-slate-950">
+                <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                
+                <!-- 6-Month Lowest Tag -->
+                ${item.isCheapestNow ? `
+                  <span class="absolute top-3 left-3 bg-emerald-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider shadow-md">
+                    <i class="fa-solid fa-fire mr-1"></i> 6-Mo Lowest
+                  </span>
+                ` : `
+                  <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-300 border border-slate-700 text-[10px] font-semibold px-2 py-1 rounded-md">
+                    ${item.stores.length} Retailers
+                  </span>
+                `}
+
+                <!-- Price Alert Toggle Badge -->
+                <button 
+                  onclick="toggleAlert('${item.id}', event)" 
+                  title="${isAlertActive ? 'Tracking active' : 'Click to track price'}"
+                  class="absolute top-3 right-3 w-8 h-8 rounded-full ${isAlertActive ? 'bg-amber-500 text-slate-950' : 'bg-slate-900/80 text-slate-400 hover:text-white'} flex items-center justify-center transition-all shadow-md"
+                >
+                  <i class="fa-solid fa-bell text-xs"></i>
+                </button>
+              </div>
+
+              <!-- Content Body -->
+              <div class="p-4 space-y-2">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                  <span class="font-semibold text-amber-400">${item.category}</span>
+                  <span class="text-emerald-400 font-semibold">${lowestStore.name}</span>
+                </div>
+
+                <h3 class="font-bold text-slate-100 text-sm line-clamp-2 hover:text-emerald-400 transition-colors cursor-pointer" onclick="openPriceModal('${item.id}')">
+                  ${item.title}
+                </h3>
+
+                <!-- Price Comparison Bar -->
+                <div class="pt-2 border-t border-slate-800/80 flex items-baseline justify-between">
+                  <div>
+                    <span class="text-xs text-slate-400 block">Lowest Price</span>
+                    <span class="text-xl font-extrabold text-white">$${item.currentPrice.toFixed(2)}</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[10px] text-slate-400 block">6-Mo Range</span>
+                    <span class="text-xs font-semibold text-slate-300">$${item.lowestPrice6Mo.toFixed(0)} - $${item.highestPrice6Mo.toFixed(0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Actions Footer -->
+            <div class="p-4 pt-0 gap-2 flex items-center">
+              <button 
+                onclick="openPriceModal('${item.id}')"
+                class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+              >
+                <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                6-Mo Chart
+              </button>
+              <button 
+                onclick="addToCart('${item.id}', '${lowestStore.name}', ${item.currentPrice})"
+                class="py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-md shadow-emerald-500/10"
+              >
+                <i class="fa-solid fa-plus"></i>
+                Add
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function loadMoreProducts() {
+      displayLimit += 16;
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('productsGrid');
+      const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+      
+      let filtered = productsData.filter(item => {
+        const matchesCategory = (currentCategory === 'All') ||
+                                (currentCategory === 'Deals' && item.isCheapestNow) ||
+                                (item.category === currentCategory);
+
+        // Advanced multi-field keyword search logic
+        const matchesSearch = !searchVal ||
+                              item.title.toLowerCase().includes(searchVal) ||
+                              item.category.toLowerCase().includes(searchVal) ||
+                              item.description.toLowerCase().includes(searchVal) ||
+                              item.stores.some(s => s.name.toLowerCase().includes(searchVal));
+
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-12 bg-slate-900/50 border border-slate-800 rounded-2xl">
+            <i class="fa-solid fa-magnifying-glass-minus text-3xl text-slate-500 mb-3"></i>
+            <p class="text-slate-300 font-bold">No products match "${searchVal}" under ${currentCategory}.</p>
+            <p class="text-xs text-slate-500 mt-1">Try searching keywords like "chair", "desk", "air fryer", "shoes", or "dyson".</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => {
+        const lowestStore = item.stores.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
+        const isAlertActive = trackedAlerts.has(item.id);
+
+        return `
+          <div class="group bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:shadow-emerald-500/5">
+            <div>
+              <!-- Product Image Container -->
+              <div class="relative h-48 overflow-hidden bg-slate-950">
+                <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                
+                <!-- 6-Month Lowest Tag -->
+                ${item.isCheapestNow ? `
+                  <span class="absolute top-3 left-3 bg-emerald-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider shadow-md">
+                    <i class="fa-solid fa-fire mr-1"></i> 6-Mo Lowest Price
+                  </span>
+                ` : `
+                  <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-300 border border-slate-700 text-[10px] font-semibold px-2 py-1 rounded-md">
+                    ${item.stores.length} Retailers Compared
+                  </span>
+                `}
+
+                <!-- Price Alert Toggle Badge -->
+                <button 
+                  onclick="toggleAlert('${item.id}', event)" 
+                  title="${isAlertActive ? 'Tracking active' : 'Click to track price'}"
+                  class="absolute top-3 right-3 w-8 h-8 rounded-full ${isAlertActive ? 'bg-amber-500 text-slate-950' : 'bg-slate-900/80 text-slate-400 hover:text-white'} flex items-center justify-center transition-all shadow-md"
+                >
+                  <i class="fa-solid fa-bell text-xs"></i>
+                </button>
+              </div>
+
+              <!-- Content Body -->
+              <div class="p-4 space-y-2">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                  <span class="font-semibold text-amber-400">${item.category}</span>
+                  <span class="text-emerald-400 font-semibold">${lowestStore.name}</span>
+                </div>
+
+                <h3 class="font-bold text-slate-100 text-sm line-clamp-2 hover:text-emerald-400 transition-colors cursor-pointer" onclick="openPriceModal('${item.id}')">
+                  ${item.title}
+                </h3>
+
+                <!-- Price Comparison Bar -->
+                <div class="pt-2 border-t border-slate-800/80 flex items-baseline justify-between">
+                  <div>
+                    <span class="text-xs text-slate-400 block">Lowest Price</span>
+                    <span class="text-xl font-extrabold text-white">$${item.currentPrice.toFixed(2)}</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[10px] text-slate-400 block">6-Mo Range</span>
+                    <span class="text-xs font-semibold text-slate-300">$${item.lowestPrice6Mo.toFixed(0)} - $${item.highestPrice6Mo.toFixed(0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Actions Footer -->
+            <div class="p-4 pt-0 gap-2 flex items-center">
+              <button 
+                onclick="openPriceModal('${item.id}')"
+                class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+              >
+                <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                6-Mo Chart
+              </button>
+              <button 
+                onclick="addToCart('${item.id}', '${lowestStore.name}', ${item.currentPrice})"
+                class="py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-md shadow-emerald-500/10"
+              >
+                <i class="fa-solid fa-plus"></i>
+                Add
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openPriceModal(productId) {
+      const item = productsData.find(p => p.id === productId);
+      if (!item) return;
+      activeModalItem = item;
+
+      document.getElementById('modalTitle').textContent = item.title;
+      document.getElementById('modalCategory').textContent = item.category;
+      document.getElementById('modalImage').src = item.image;
+      document.getElementById('modalCurrentPrice').textContent = `$${item.currentPrice.toFixed(2)}`;
+      document.getElementById('modalLowestBadge').textContent = item.isCheapestNow ? "At 6-Mo Lowest Price" : "Above 6-Mo Lowest";
+      
+      document.getElementById('modalHighPrice').textContent = `$${item.highestPrice6Mo.toFixed(2)}`;
+      document.getElementById('modalLowPrice').textContent = `$${item.lowestPrice6Mo.toFixed(2)}`;
+
+      // Alert button state
+      const isAlert = trackedAlerts.has(item.id);
+      const alertBtn = document.getElementById('modalAlertBtn');
+      alertBtn.innerHTML = isAlert ? 
+        `<i class="fa-solid fa-bell-slash text-amber-400"></i><span>Remove Price Alert</span>` :
+        `<i class="fa-solid fa-bell"></i><span>Notify Me When Cheaper</span>`;
+
+      // Render Store Prices List
+      const storeContainer = document.getElementById('modalStorePrices');
+      storeContainer.innerHTML = item.stores.map(store => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full ${store.price === item.currentPrice ? 'bg-emerald-500' : 'bg-slate-600'}"></span>
+            <span class="font-semibold text-sm text-slate-200">${store.name}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">${store.dealTag}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-white text-sm">$${store.price.toFixed(2)}</span>
+            <button onclick="addToCart('${item.id}', '${store.name}', ${store.price})" class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500 hover:text-slate-950 transition-all">
+              Buy Here
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      // AI Advice snippet
+      const adviceEl = document.getElementById('modalAiAdvice');
+      if (item.isCheapestNow) {
+        adviceEl.innerHTML = `<span class="text-emerald-400 font-bold">Great time to buy!</span> Current price matches the absolute lowest observed in 6 months across all tracked retail outlets.`;
+      } else {
+        const diff = item.currentPrice - item.lowestPrice6Mo;
+        adviceEl.innerHTML = `<span class="text-amber-400 font-bold">Consider waiting or setting an alert.</span> This item has been $${diff.toFixed(2)} cheaper within the last 6 months.`;
+      }
+
+      // Show Modal
+      document.getElementById('priceModal').classList.remove('hidden');
+
+      // Initialize Chart.js Chart
+      setTimeout(() => {
+        renderPriceChart(item);
+      }, 50);
+    }
+
+    function renderPriceChart(item) {
+      const ctx = document.getElementById('priceHistoryChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      const labels = ['5 Mos Ago', '4 Mos Ago', '3 Mos Ago', '2 Mos Ago', 'Last Month', 'Today'];
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Price ($USD)',
+            data: item.priceHistory6Mo,
+            borderColor: '#22c55e',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5,
+            pointBackgroundColor: '#22c55e',
+            pointBorderColor: '#0f172a',
+            pointBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) { return `Price: $${context.parsed.y.toFixed(2)}`; }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { 
+                color: '#94a3b8', 
+                font: { size: 10 },
+                callback: function(value) { return '$' + value; }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function closeModal() {
+      document.getElementById('priceModal').classList.add('hidden');
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+    }
+
+    function renderAutoDetectedDeals() {
+      const container = document.getElementById('autoDetectedList');
+      const deals = productsData.filter(p => p.autoDetectedReason);
+
+      container.innerHTML = deals.map(item => {
+        const lowestStore = item.stores.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
+        return `
+          <div class="bg-slate-900 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
+            <div class="flex items-center gap-4">
+              <img src="${item.image}" class="w-16 h-16 rounded-xl object-cover bg-slate-950 border border-slate-800 shrink-0">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <i class="fa-solid fa-radar mr-1"></i> Auto Detected
+                </span>
+                <h4 class="font-bold text-white text-sm hover:text-emerald-400 cursor-pointer mt-1" onclick="openPriceModal('${item.id}')">
+                  ${item.title}
+                </h4>
+                <p class="text-xs text-slate-400 mt-0.5">${item.autoDetectedReason}</p>
+              </div>
+            </div>
+
+            <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-800 shrink-0">
+              <div class="text-left sm:text-right">
+                <span class="text-xs text-slate-400 block">${lowestStore.name} Price</span>
+                <span class="text-lg font-black text-emerald-400">$${item.currentPrice.toFixed(2)}</span>
+              </div>
+              <button onclick="addToCart('${item.id}', '${lowestStore.name}', ${item.currentPrice})" class="mt-2 px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-cart-plus"></i> Add to Cart
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function askGeminiRecommendation() {
+      const card = document.getElementById('aiInsightsCard');
+      const content = document.getElementById('aiInsightsContent');
+      card.classList.remove('hidden');
+      content.innerHTML = `<div class="flex items-center gap-2 text-blue-400"><i class="fa-solid fa-spinner animate-spin"></i> Pricii AI is analyzing universal retail trends across Wayfair, Home Depot, Nike, Target & Amazon...</div>`;
+
+      const prompt = "Analyze these products and prices: " + 
+        productsData.map(p => `${p.title} - Current: $${p.currentPrice}, 6-Mo Low: $${p.lowestPrice6Mo}`).join('; ') + 
+        ". Provide a concise 2-sentence recommendation highlighting the single best non-tech or home deal to buy today.";
+
+      try {
+        const apiKey = ""; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            systemInstruction: { parts: [{ text: "You are Pricii AI, an expert bargain analyst across all retail markets (furniture, fashion, appliances, tech). Keep answers direct." }] }
+          })
+        });
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          content.innerHTML = `<p class="text-slate-200 text-sm leading-relaxed">${text}</p>`;
+        } else {
+          content.innerHTML = "Pricii AI recommends buying the **Herman Miller Aeron Chair** on Wayfair ($400 off 6-month peak) or the **Ninja DualZone Air Fryer** at Target, both representing 6-month historical low prices!";
+        }
+      } catch (err) {
+        content.innerHTML = "Pricii AI recommends buying the **Herman Miller Aeron Chair** on Wayfair ($400 off 6-month peak) or the **Ninja DualZone Air Fryer** at Target, both representing 6-month historical low prices!";
+      }
+    }
+
+    function closeAiInsights() {
+      document.getElementById('aiInsightsCard').classList.add('hidden');
+    }
+
+    function addToCart(productId, storeName, price) {
+      const product = productsData.find(p => p.id === productId);
+      if (!product) return;
+
+      const existingIndex = cart.findIndex(c => c.productId === productId && c.storeName === storeName);
+      if (existingIndex > -1) {
+        cart[existingIndex].quantity += 1;
+      } else {
+        cart.push({
+          productId: product.id,
+          title: product.title,
+          image: product.image,
+          storeName: storeName,
+          price: price,
+          quantity: 1,
+          originalPrice: product.highestPrice6Mo
+        });
+      }
+
+      updateCartUI();
+      showToast(`Added ${product.title.substring(0, 22)}... (${storeName}) to Universal Cart!`, 'success');
+    }
+
+    function addModalItemToCart() {
+      if (activeModalItem) {
+        const lowestStore = activeModalItem.stores.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
+        addToCart(activeModalItem.id, lowestStore.name, activeModalItem.currentPrice);
+        closeModal();
+      }
+    }
+
+    function updateCartUI() {
+      const countBadge = document.getElementById('cartCountBadge');
+      const totalItems = cart.reduce((acc, curr) => acc + curr.quantity, 0);
+      countBadge.textContent = totalItems;
+
+      const emptyState = document.getElementById('cartEmptyState');
+      const cartContent = document.getElementById('cartContent');
+
+      if (cart.length === 0) {
+        emptyState.classList.remove('hidden');
+        cartContent.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      cartContent.classList.remove('hidden');
+
+      // Group cart items by store name
+      const groupedByStore = {};
+      cart.forEach((item, index) => {
+        if (!groupedByStore[item.storeName]) {
+          groupedByStore[item.storeName] = [];
+        }
+        groupedByStore[item.storeName].push({ ...item, cartIndex: index });
+      });
+
+      const storeContainer = document.getElementById('cartStoreGroups');
+      const storeCount = Object.keys(groupedByStore).length;
+      document.getElementById('cartStoreCount').textContent = `${storeCount} Merchant${storeCount > 1 ? 's' : ''}`;
+
+      let subtotal = 0;
+      let savings = 0;
+
+      storeContainer.innerHTML = Object.keys(groupedByStore).map(storeName => {
+        const items = groupedByStore[storeName];
+        return `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-store text-emerald-400"></i>
+                <h4 class="font-bold text-white text-base">${storeName}</h4>
+              </div>
+              <span class="text-xs text-slate-400">${items.length} item(s)</span>
+            </div>
+
+            <div class="space-y-3">
+              ${items.map(item => {
+                const itemTotal = item.price * item.quantity;
+                subtotal += itemTotal;
+                savings += (item.originalPrice - item.price) * item.quantity;
+
+                return `
+                  <div class="flex items-center justify-between gap-4 py-2 border-b border-slate-800/40 last:border-0">
+                    <div class="flex items-center gap-3">
+                      <img src="${item.image}" class="w-12 h-12 rounded-lg object-cover bg-slate-950 border border-slate-800 shrink-0">
+                      <div>
+                        <h5 class="text-xs font-bold text-slate-200 line-clamp-1">${item.title}</h5>
+                        <span class="text-xs text-emerald-400 font-semibold">$${item.price.toFixed(2)} each</span>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                      <div class="flex items-center bg-slate-950 border border-slate-800 rounded-lg text-xs">
+                        <button onclick="changeQuantity(${item.cartIndex}, -1)" class="px-2 py-1 text-slate-400 hover:text-white">-</button>
+                        <span class="px-2 font-bold text-white">${item.quantity}</span>
+                        <button onclick="changeQuantity(${item.cartIndex}, 1)" class="px-2 py-1 text-slate-400 hover:text-white">+</button>
+                      </div>
+                      <span class="font-bold text-white text-sm">$${itemTotal.toFixed(2)}</span>
+                      <button onclick="removeFromCart(${item.cartIndex})" class="text-slate-500 hover:text-rose-400 text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('cartSubtotal').textContent = `$${subtotal.toFixed(2)}`;
+      document.getElementById('cartTotalSavings').textContent = `-$${savings.toFixed(2)}`;
+      document.getElementById('cartTotal').textContent = `$${subtotal.toFixed(2)}`;
+    }
+
+    function changeQuantity(index, delta) {
+      if (cart[index]) {
+        cart[index].quantity += delta;
+        if (cart[index].quantity <= 0) {
+          cart.splice(index, 1);
+        }
+        updateCartUI();
+      }
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartUI();
+      showToast('Item removed from Universal Cart', 'info');
+    }
+
+    function clearCart() {
+      if (cart.length === 0) return;
+      cart = [];
+      updateCartUI();
+      showToast('Universal Cart cleared', 'info');
+    }
+
+    function executeMultiStoreCheckout() {
+      if (cart.length === 0) return;
+      showToast('Processing multi-merchant API orders across stores...', 'success');
+      setTimeout(() => {
+        cart = [];
+        updateCartUI();
+        showToast('🎉 Multi-merchant orders placed successfully! Confirmation emails sent.', 'success');
+      }, 1500);
+    }
+
+    function renderSlide(index) {
+      const slide = pitchSlides[index];
+      const container = document.getElementById('slideContent');
+      
+      document.getElementById('slideIndicator').textContent = `Slide ${index + 1} / ${pitchSlides.length}`;
+      document.getElementById('prevSlideBtn').disabled = (index === 0);
+
+      container.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <i class="fa-solid ${slide.icon}"></i> ${slide.highlightKey}
+            </span>
+            <span class="text-xs text-slate-500">Presenter(s): <strong class="text-slate-300">${slide.presenters}</strong></span>
+          </div>
+
+          <h3 class="text-3xl font-extrabold text-white tracking-tight">${slide.title}</h3>
+
+          <blockquote class="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-xl text-amber-200 font-medium italic text-base leading-relaxed">
+            ${slide.quote}
+          </blockquote>
+
+          <div class="text-slate-300 text-sm leading-relaxed whitespace-pre-line bg-slate-950/60 p-5 rounded-xl border border-slate-800">
+            ${slide.body}
+          </div>
+        </div>
+      `;
+    }
+
+    function nextSlide() {
+      if (currentSlideIndex < pitchSlides.length - 1) {
+        currentSlideIndex++;
+        renderSlide(currentSlideIndex);
+      } else {
+        currentSlideIndex = 0;
+        renderSlide(currentSlideIndex);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlideIndex > 0) {
+        currentSlideIndex--;
+        renderSlide(currentSlideIndex);
+      }
+    }
+
+    function speakCurrentSlideScript() {
+      const slide = pitchSlides[currentSlideIndex];
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(`${slide.presenters} presenting slide ${slide.step}: ${slide.title}. ${slide.quote}. ${slide.body}`);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+        showToast(`Playing audio presenter pitch for Slide ${slide.step}...`, 'info');
+      } else {
+        showToast(slide.quote, 'info');
+      }
+    }
+
+    function testAppFromPitch() {
+      switchTab('explore');
+      showToast("Redirected to live product price comparison engine!", 'success');
+    }
+
+    function toggleAlert(productId, event) {
+      if (event) event.stopPropagation();
+      if (trackedAlerts.has(productId)) {
+        trackedAlerts.delete(productId);
+        showToast('Removed item from active price notifications', 'info');
+      } else {
+        trackedAlerts.add(productId);
+        showToast('🔔 Price drop alert activated for 6-month low notifications!', 'success');
+      }
+      document.getElementById('alertCountText').textContent = `${trackedAlerts.size} Items`;
+      renderProducts();
+    }
+
+    function toggleAlertForCurrentItem() {
+      if (activeModalItem) {
+        toggleAlert(activeModalItem.id);
+        openPriceModal(activeModalItem.id);
+      }
+    }
+
+    function triggerQuickScan() {
+      showToast("Scanning store prices across Wayfair, Home Depot, IKEA, Target, Nike & Amazon...", "info");
+      setTimeout(() => {
+        showToast("Scan complete! Updated 6-month historical price curves across all categories.", "success");
+      }, 1000);
+    }
+
+    function filterProducts() {
+      const input = document.getElementById('searchInput');
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (input.value.trim().length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderProducts();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderProducts();
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const bgColor = type === 'success' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-200' :
+                      type === 'warning' ? 'bg-amber-900/90 border-amber-500 text-amber-200' :
+                      'bg-slate-900 border-slate-700 text-slate-200';
+
+      toast.className = `p-3.5 rounded-xl border text-xs font-semibold shadow-2xl flex items-center justify-between pointer-events-auto transition-all transform translate-y-2 opacity-0 ${bgColor}`;
+      toast.innerHTML = `
+        <div class="flex items-center gap-2">
+          <i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-circle-info text-blue-400'} text-sm"></i>
+          <span>${message}</span>
+        </div>
+        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white ml-3">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
